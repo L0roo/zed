@@ -24,7 +24,7 @@ while i<100:
     # Read side by side frames stored in the SVO
     zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA)
     if i==0:
-      point_cloud.write("test2.pcd")
+      point_cloud.write("test1.pcd")
     # Get frame count
     svo_position = zed.get_svo_position()
     i+=1

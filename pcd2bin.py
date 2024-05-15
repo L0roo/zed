@@ -1,7 +1,7 @@
 import numpy as np
 from pypcd import pypcd
 
-input_file = 'test3.pcd'
+input_file = 'test1.pcd'
 output_path = "data/bin/"+input_file[:-3] + 'bin'
 
 pcd_data = pypcd.PointCloud.from_path("data/pcd/"+input_file)
@@ -12,12 +12,9 @@ points[:, 2] = pcd_data.pc_data['z'].copy()
 #points[:, 3] = pcd_data.pc_data['intensity'].copy().astype(np.float32)
 #mean = np.mean(points[:,:3], axis=0)
 #std_dev = np.std(points[:,:3], axis=0)
-points[:,:3] = points[:,:3]*5 # do if .pcd via python not ZED depth viewer (scale)
+points[:,:3] = points[:,:3] / 1000 # do if .pcd via python not ZED depth viewer (scale)
 
 
-import struct
-char_array = struct.unpack('BBBB', pcd_data[3])
-print("(R,G,B,A) = {}".format(char_array))
 
 points_color = np.random.randint(size= (pcd_data.width, 3),low=0, high=255)
 #points_color = points_color.astype(np.uint8)
