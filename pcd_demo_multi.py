@@ -103,13 +103,11 @@ def main():
         call_args['inputs'] = dict(points=point_cloud)
         inferencer(**call_args)
         print("showing file "+str(i))
-        '''
         if call_args['out_dir'] != '' and not (call_args['no_save_vis']
                                                and call_args['no_save_pred']):
             print_log(
                 f'results have been saved at {call_args["out_dir"]}',
                 logger='current')
-        '''
 
 
 if __name__ == '__main__':
