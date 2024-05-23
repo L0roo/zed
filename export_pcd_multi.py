@@ -37,6 +37,6 @@ while i<1000:
     svo_position = zed.get_svo_position()
     i+=1
   elif zed.grab() == sl.ERROR_CODE.END_OF_SVOFILE_REACHED:
-    print("SVO end has been reached. "+str(int(i/50)) +" pcd files generated")
+    print("SVO end has been reached. "+str(int(i/50)+1) +" pcd files generated")
     break
 zed.close()

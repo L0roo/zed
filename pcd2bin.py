@@ -2,13 +2,13 @@ import numpy as np
 from pypcd import pypcd
 import struct
 
-input_file = 'test2.pcd'
+input_file = '1.pcd'
 output_path = "data/bin/"+input_file[:-3] + 'bin'
 
-max_depth = 1.2 # in m
+max_depth = 1.5 # in m
 scale = 5 # scale up a bit bc of white screen on visualisation, big mystery
 perc = 0.01 # percentage of points to keep,  higher percentage, might need higher scaling
-unit = 1000 # 1000 for m, 1 for mm, via .py gives in mm, gui gives m
+unit = 1000 # 1000 for mm, 1 for m, via .py gives in mm, gui gives m
 
 deg_x = np.deg2rad(0)
 deg_y = np.deg2rad(0)
@@ -49,7 +49,7 @@ for i in range(pcd_data.width):
 points = points[mask]
 
 
-mask2 = points[:,2] < max_depth*scale
+mask2 = points[:,2] < max_depth*scale*1000
 points = points[mask2]
 
 #rotate points

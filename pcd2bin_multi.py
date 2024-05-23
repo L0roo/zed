@@ -5,10 +5,10 @@ import os
 import shutil
 
 
-max_depth = 1.2 # in m
+max_depth = 1.5 # in m
 scale = 5 # scale up a bit bc of white screen on visualisation, big mystery
 perc = 0.01 # percentage of points to keep,  higher percentage, might need higher scaling
-unit = 1000 # 1000 for m, 1 for mm, via .py gives in mm, gui gives m
+unit = 1000 # 1000 for mm, 1 for m, via .py gives in mm, gui gives m
 
 deg_x = np.deg2rad(0)
 deg_y = np.deg2rad(0)
