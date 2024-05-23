@@ -5,6 +5,8 @@ import os
 import shutil
 
 
+np.random.seed(427)
+
 max_depth = 1.5 # in m
 scale = 5 # scale up a bit bc of white screen on visualisation, big mystery
 perc = 0.01 # percentage of points to keep,  higher percentage, might need higher scaling

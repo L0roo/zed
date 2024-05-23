@@ -53,7 +53,7 @@ def parse_args():
         help='Whether to print the results.')
     call_args = vars(parser.parse_args())
 
-    #call_args['inputs'] = dict(points=call_args.pop('pcd'))
+    #call_args['inputs'] = dict(points=call_args.pop('pcd_folder'))
 
     if call_args['no_save_vis'] and call_args['no_save_pred']:
         call_args['out_dir'] = ''
@@ -81,9 +81,17 @@ def main():
     init_args, call_args = parse_args()
 
     inferencer = LidarDet3DInferencer(**init_args)
+    '''
+    inferencer(**call_args)
 
+    if call_args['out_dir'] != '' and not (call_args['no_save_vis']
+                                           and call_args['no_save_pred']):
+        print_log(
+            f'results have been saved at {call_args["out_dir"]}',
+            logger='current')
+
+    '''
     input_base = call_args.pop('pcd_folder')
-
 
     num_files = len(os.listdir(input_base))
     print("Amount of files: " + str(num_files))
@@ -94,13 +102,14 @@ def main():
 
         call_args['inputs'] = dict(points=point_cloud)
         inferencer(**call_args)
-
+        print("showing file "+str(i))
+        '''
         if call_args['out_dir'] != '' and not (call_args['no_save_vis']
                                                and call_args['no_save_pred']):
             print_log(
                 f'results have been saved at {call_args["out_dir"]}',
                 logger='current')
-        time.sleep(0.5)
+        '''
 
 
 if __name__ == '__main__':

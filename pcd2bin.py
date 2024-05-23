@@ -2,13 +2,17 @@ import numpy as np
 from pypcd import pypcd
 import struct
 
+np.random.seed(427)
+
 input_file = '1.pcd'
 output_path = "data/bin/"+input_file[:-3] + 'bin'
 
 max_depth = 1.5 # in m
-scale = 5 # scale up a bit bc of white screen on visualisation, big mystery
+scale = 1.0 # scale up a bit bc of white screen on visualisation, big mystery solved (needs at least one bounding box above score threshold, detects more when scaled up)
 perc = 0.01 # percentage of points to keep,  higher percentage, might need higher scaling
 unit = 1000 # 1000 for mm, 1 for m, via .py gives in mm, gui gives m
+
+min_depth = 1.0 # in m
 
 deg_x = np.deg2rad(0)
 deg_y = np.deg2rad(0)
@@ -49,8 +53,11 @@ for i in range(pcd_data.width):
 points = points[mask]
 
 
-mask2 = points[:,2] < max_depth*scale*1000
+mask2 = points[:,2] < max_depth*scale
 points = points[mask2]
+
+#mask3 = points[:,2] > min_depth*scale
+#points = points[mask3]
 
 #rotate points
 
