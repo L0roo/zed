@@ -12,7 +12,7 @@ output_base = "data/bin/multi2"
 
 max_depth = 2.5 # in m
 scale = 3 # scale up a bit bc of white screen on visualisation, big mystery
-perc = 0.02 # percentage of points to keep,  higher percentage, might need higher scaling
+perc = 0.06 # percentage of points to keep,  higher percentage, might need higher scaling (is applied before max_depth reduction for speed)
 unit = 1000 # 1000 for mm, 1 for m, via .py gives in mm, gui gives m
 
 deg_x = np.deg2rad(0)

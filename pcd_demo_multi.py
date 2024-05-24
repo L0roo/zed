@@ -14,7 +14,7 @@ from mmdet3d.apis import LidarDet3DInferencer
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument('pcd_folder', help='Point cloud file folder in .bin (str)')
+    parser.add_argument('pcd_folder', help='Point cloud file folder with .bin files (str)')
     parser.add_argument('model', help='Config file')
     parser.add_argument('weights', help='Checkpoint file')
     parser.add_argument(
@@ -103,13 +103,14 @@ def main():
         point_cloud = point_cloud.reshape(-1, 6)
 
         call_args['inputs'] = dict(points=point_cloud)
+        inferencer.num_visualized_imgs = i #can not generate output files else
         inferencer(**call_args)
         print("showing file "+str(i))
         if call_args['out_dir'] != '' and not (call_args['no_save_vis']
                                                and call_args['no_save_pred']):
             print_log(
                 f'results have been saved at {call_args["out_dir"]}',
-                logger='current') # has some problems, therefore no-save-pred set to true
+                logger='current')
 
         end_time = time.time()
         time_dif = round(end_time-start_time,4)
