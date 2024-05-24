@@ -4,17 +4,13 @@ import os
 from argparse import ArgumentParser
 import numpy as np
 import time
-import sys
 import pyzed.sl as sl
-import argparse
-import shutil
 import struct
 
 from mmengine.logging import print_log
 
 from mmdet3d.apis import LidarDet3DInferencer
 
-# needs to be run in mmdetection env
 
 '''
 To run this file: 
@@ -31,6 +27,7 @@ important: if no prediction score is above the threshold, no image will be displ
 
 
 downsampling = 5 # each x frame is used
+max_frames = 50
 
 max_depth = 2.0 # in m (runs only on z coordinate)
 scale = 3 # scale up a bit gives higher pred scores
@@ -40,7 +37,7 @@ read_color = True
 
 
 
-
+#not used at the moment
 deg_x = np.deg2rad(0)
 deg_y = np.deg2rad(0)
 deg_z = np.deg2rad(0)
@@ -196,7 +193,7 @@ def main():
     i = 0
     frame_counter = 0
     start_time = time.time()
-    while i < 10000:
+    while frame_counter < max_frames:
         if zed.grab() == sl.ERROR_CODE.SUCCESS:
             if i % downsampling == 0:
                 st = time.time()
@@ -225,19 +222,20 @@ def main():
                 print("Inference on frame in "+str(time_dif)+" s")
             i += 1
         elif zed.grab() == sl.ERROR_CODE.END_OF_SVOFILE_REACHED:
-            end_time = time.time()
-            time_dif = end_time - start_time
-            time_pf = round((time_dif / frame_counter), 4)*1000
-            print("Average time per frame total: " + str(time_pf) + " ms")
-            print("Average time per frame (time on used frames only): " + str(round(np.mean(time_list),4)*1000) + " ms")
-            print("Average time per frame (inference): " + str(round(np.mean(inferencer_time_list),4)*1000) + " ms")
-            print("Average time per frame (transform pc): " + str(round(np.mean(filter_time_list),4)*1000) + " ms")
-            print("Average time per frame (depth filter): " + str(round(np.mean(depth_filter_time_list),4)*1000) + " ms")
-            print("Average time per frame (subsample): " + str(round(np.mean(sub_filter_time_list),4)*1000) + " ms")
-            print("Average time per frame (color): " + str(round(np.mean(color_filter_time_list),4)*1000) + " ms")
-            print("Average FPS: "+str(round(1000/time_pf,4)))
+            #zed.set_svo_position(0)
             break
     zed.close()
+    end_time = time.time()
+    time_dif = end_time - start_time
+    time_pf = round((time_dif / frame_counter), 4) * 1000
+    print("Average time per frame total: " + str(time_pf) + " ms")
+    print("Average time per frame (time on used frames only): " + str(round(np.mean(time_list), 4) * 1000) + " ms")
+    print("Average time per frame (inference): " + str(round(np.mean(inferencer_time_list), 4) * 1000) + " ms")
+    print("Average time per frame (transform pc): " + str(round(np.mean(filter_time_list), 4) * 1000) + " ms")
+    print("Average time per frame (depth filter): " + str(round(np.mean(depth_filter_time_list), 4) * 1000) + " ms")
+    print("Average time per frame (subsample): " + str(round(np.mean(sub_filter_time_list), 4) * 1000) + " ms")
+    print("Average time per frame (color): " + str(round(np.mean(color_filter_time_list), 4) * 1000) + " ms")
+    print("Average FPS: " + str(round(1000 / time_pf, 4)))
     print("Average points per cloud: " + str(round(np.mean(size_list), 0)))
 
 
