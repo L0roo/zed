@@ -147,7 +147,6 @@ def parse_args():
 
 
 def main():
-    # TODO: Support inference of point cloud numpy file.
     init_args, call_args = parse_args()
 
     inferencer = LidarDet3DInferencer(**init_args)
@@ -170,7 +169,7 @@ def main():
                 point_cloud_np = point_cloud.get_data()[:, :, :4]
                 point_cloud_np = point_cloud_np.reshape((-1, 4))
                 points = pcd2bin(point_cloud_np)
-                call_args['inputs'] = dict(points=point_cloud)
+                call_args['inputs'] = dict(points=points)
                 inferencer.num_visualized_imgs = i  # can not generate output files else
                 inferencer(**call_args)
                 print("showing file " + str(i))
