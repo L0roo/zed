@@ -3,17 +3,20 @@ from pypcd import pypcd
 import struct
 import os
 import shutil
-
+import time
 
 np.random.seed(427)
 
 input_base = 'data/pcd/multi2'
-output_base = "data/bin/multi2"
+output_base = "data/bin/multi4"
 
 max_depth = 2.5 # in m
 scale = 3 # scale up a bit bc of white screen on visualisation, big mystery
-perc = 0.06 # percentage of points to keep,  higher percentage, might need higher scaling (is applied before max_depth reduction for speed)
+perc = 0.02 # percentage of points to keep,  higher percentage, might need higher scaling (is applied before max_depth reduction for speed)
+#perc of 0.02 gives approx 30000 points
 unit = 1000 # 1000 for mm, 1 for m, via .py gives in mm, gui gives m
+read_color = True
+
 
 deg_x = np.deg2rad(0)
 deg_y = np.deg2rad(0)
@@ -26,36 +29,38 @@ rot_mat_z = np.array([[np.cos(deg_z), -np.sin(deg_z), 0], [np.sin(deg_z), np.cos
 size_list = []
 
 def pcd2bin(input_path, output_path):
+    st = time.time()
     pcd_data = pypcd.PointCloud.from_path(input_path)
     points = np.zeros([pcd_data.width, 6], dtype=np.float32)
     points[:, 0] = pcd_data.pc_data['x'].copy()
     points[:, 1] = pcd_data.pc_data['y'].copy()
     points[:, 2] = pcd_data.pc_data['z'].copy()
     points[:,:3] = points[:,:3] *(scale / unit)# scaling makes the visualization work somehow, also has a big influence on bboxes
+    et = time.time()
+    print((et-st))
 
 
 
-    #random color, reduce dim above from 6 to 3
-    #points_color = np.random.randint(size= (pcd_data.width, 3),low=0, high=255)
-    #points_color = points_color.astype(np.uint8)
-    #points_color = points_color + 2570
 
-    #points = np.hstack((points,points_color))
+
+
 
 
 
 
     #subsample
-
     mask = np.random.choice([True, False], size=len(points), p=[perc, 1-perc])
 
-
-
-    for i in range(pcd_data.width):
-        if mask[i]:
-            char_array = struct.unpack('BBBB', pcd_data.pc_data['rgb'][i])
-            points[i,3:] = char_array[:3]
-            #print("(R,G,B,A) = {}".format(char_array))
+    if read_color:
+        #read color
+        for i in range(pcd_data.width):
+            if mask[i]:
+                char_array = struct.unpack('BBBB', pcd_data.pc_data['rgb'][i])
+                points[i,3:] = char_array[:3]
+                #print("(R,G,B,A) = {}".format(char_array))
+    else:
+        points_color = np.random.randint(size= (pcd_data.width, 3),low=0, high=255)
+        points[:,3:] = points_color
 
 
     points = points[mask]
@@ -81,7 +86,7 @@ def pcd2bin(input_path, output_path):
         f.write(points.tobytes())
 
 def main():
-
+    start_time = time.time()
     if os.path.exists(output_base):
         # Remove the directory and its contents
         shutil.rmtree(output_base)
@@ -96,6 +101,11 @@ def main():
         pcd2bin(input_path, output_path)
         print("File converted "+str(i))
     print("Average points per cloud: "+ str(np.mean(size_list)))
+    end_time = time.time()
+
+    time_dif = end_time - start_time
+    time_pf = round(time_dif/num_files,4)
+    print("Time per file: " + str(time_pf) + " s")
 
 if __name__=="__main__":
     main()
