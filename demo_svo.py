@@ -53,6 +53,7 @@ filter_time_list = []
 depth_filter_time_list = []
 sub_filter_time_list = []
 color_filter_time_list = []
+pos_time_list = []
 
 
 
@@ -190,7 +191,7 @@ def main():
     err = zed.open(init_parameters)
 
     point_cloud = sl.Mat()
-    i = 0
+    i=0
     frame_counter = 0
     start_time = time.time()
     while frame_counter < max_frames:
@@ -220,7 +221,11 @@ def main():
                 time_dif = round(et-st,4)
                 time_list.append(time_dif)
                 print("Inference on frame in "+str(time_dif)+" s")
-            i += 1
+                #st_pos = time.time()
+                #zed.set_svo_position(zed.get_svo_position()+downsampling-1)
+                #et_pos = time.time()
+                #pos_time_list.append(et_pos-st_pos)
+            i+=1
         elif zed.grab() == sl.ERROR_CODE.END_OF_SVOFILE_REACHED:
             #zed.set_svo_position(0)
             break
@@ -230,6 +235,7 @@ def main():
     time_pf = round((time_dif / frame_counter), 4) * 1000
     print("Average time per frame total: " + str(time_pf) + " ms")
     print("Average time per frame (time on used frames only): " + str(round(np.mean(time_list), 4) * 1000) + " ms")
+    #print("Average time per frame (svo pos change): " + str(round(np.mean(pos_time_list), 4) * 1000) + " ms")
     print("Average time per frame (inference): " + str(round(np.mean(inferencer_time_list), 4) * 1000) + " ms")
     print("Average time per frame (transform pc): " + str(round(np.mean(filter_time_list), 4) * 1000) + " ms")
     print("Average time per frame (depth filter): " + str(round(np.mean(depth_filter_time_list), 4) * 1000) + " ms")
