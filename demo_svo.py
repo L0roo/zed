@@ -16,6 +16,19 @@ from mmdet3d.apis import LidarDet3DInferencer
 
 # needs to be run in mmdetection env
 
+'''
+To run this file: 
+mmdetection3d environment with minkowski engine
+download chosen model, set path accordingly in example below
+adjust parameters in this file
+example:
+python demo_svo.py "data/HD1080_SN34783283_15-12-38.svo" /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/projects/TR3D/configs/tr3d_1xb16_scannet-3d-18class.py /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/pdz/tr3d_1xb16_scannet-3d-18class.pth --pred-score-thr=0.09 --wait-time=0.0 --show
+
+important: if no prediction score is above the threshold, no image will be displayed
+
+'''
+
+
 
 downsampling = 5 # each x frame is used
 
