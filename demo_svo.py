@@ -222,10 +222,12 @@ def main():
                 time_list.append(time_dif)
                 print("Inference on frame in "+str(time_dif)+" s")
                 #st_pos = time.time()
-                #zed.set_svo_position(zed.get_svo_position()+downsampling-1)
+                #i += 1
+                #zed.set_svo_position(i*downsampling)
                 #et_pos = time.time()
                 #pos_time_list.append(et_pos-st_pos)
             i+=1
+
         elif zed.grab() == sl.ERROR_CODE.END_OF_SVOFILE_REACHED:
             #zed.set_svo_position(0)
             break
