@@ -7,16 +7,23 @@ import shutil
 
 np.random.seed(427)
 
-max_depth = 1.5 # in m
-scale = 5 # scale up a bit bc of white screen on visualisation, big mystery
-perc = 0.01 # percentage of points to keep,  higher percentage, might need higher scaling
+input_base = 'data/pcd/multi2'
+output_base = "data/bin/multi2"
+
+max_depth = 2.5 # in m
+scale = 3 # scale up a bit bc of white screen on visualisation, big mystery
+perc = 0.02 # percentage of points to keep,  higher percentage, might need higher scaling
 unit = 1000 # 1000 for mm, 1 for m, via .py gives in mm, gui gives m
 
 deg_x = np.deg2rad(0)
 deg_y = np.deg2rad(0)
 deg_z = np.deg2rad(0)
 
+rot_mat_x = np.array([[1, 0, 0], [0, np.cos(deg_x), -np.sin(deg_x)], [0, np.sin(deg_x), np.cos(deg_x)]])
+rot_mat_y = np.array([[np.cos(deg_y), 0, np.sin(deg_y)], [0, 1, 0], [-np.sin(deg_y), 0, np.cos(deg_y)]])
+rot_mat_z = np.array([[np.cos(deg_z), -np.sin(deg_z), 0], [np.sin(deg_z), np.cos(deg_z), 0], [0, 0, 1]])
 
+size_list = []
 
 def pcd2bin(input_path, output_path):
     pcd_data = pypcd.PointCloud.from_path(input_path)
@@ -59,9 +66,7 @@ def pcd2bin(input_path, output_path):
 
     #rotate points
 
-    rot_mat_x = np.array([[1, 0, 0],[0, np.cos(deg_x), -np.sin(deg_x)],[0, np.sin(deg_x), np.cos(deg_x)]])
-    rot_mat_y = np.array([[np.cos(deg_y), 0, np.sin(deg_y)],[0, 1, 0],[-np.sin(deg_y), 0, np.cos(deg_y)]])
-    rot_mat_z = np.array([[np.cos(deg_z), -np.sin(deg_z), 0],[np.sin(deg_z), np.cos(deg_z), 0],[0, 0, 1]])
+
     for i in range(len(points)):
         points[i,:3]= np.matmul(rot_mat_x,points[i,:3])
         points[i,:3]= np.matmul(rot_mat_y,points[i,:3])
@@ -70,12 +75,12 @@ def pcd2bin(input_path, output_path):
 
 
     points = points.astype(np.float32)
+    #print(np.shape(points))
+    size_list.append(np.shape(points)[0])
     with open(output_path, 'wb') as f:
         f.write(points.tobytes())
 
 def main():
-    input_base = 'data/pcd/multi1'
-    output_base = "data/bin/multi1"
 
     if os.path.exists(output_base):
         # Remove the directory and its contents
@@ -90,6 +95,7 @@ def main():
         output_path = output_base + "/" + str(i) + ".bin"
         pcd2bin(input_path, output_path)
         print("File converted "+str(i))
+    print("Average points per cloud: "+ str(np.mean(size_list)))
 
 if __name__=="__main__":
     main()

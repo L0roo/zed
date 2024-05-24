@@ -95,7 +95,9 @@ def main():
 
     num_files = len(os.listdir(input_base))
     print("Amount of files: " + str(num_files))
+    time_list = []
     for i in range(num_files):
+        start_time = time.time()
         input_path = input_base + "/" + str(i) + ".bin"
         point_cloud = np.fromfile(input_path, dtype=np.float32)
         point_cloud = point_cloud.reshape(-1, 6)
@@ -107,8 +109,14 @@ def main():
                                                and call_args['no_save_pred']):
             print_log(
                 f'results have been saved at {call_args["out_dir"]}',
-                logger='current')
+                logger='current') # has some problems, therefore no-save-pred set to true
 
+        end_time = time.time()
+        time_dif = round(end_time-start_time,4)
+        time_list.append(time_dif)
+        print("Time for frame: "+str(time_dif))
+
+    print("Average time per pointcloud: "+str(np.mean(time_list))+" s")
 
 if __name__ == '__main__':
     main()
