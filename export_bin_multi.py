@@ -12,13 +12,13 @@ input_path = "data/HD1080_SN34783283_15-12-38.svo"
 output_base = "data/bin/multi5"
 downsampling = 5 # each x frame is used
 
-max_depth = 2.5 # in m
+max_depth = 2.5 # in m (runs only on z coordinate)
 scale = 3 # scale up a bit gives higher pred scores
 perc = 0.02 # percentage of points to keep,  higher percentage, might need higher scaling (is applied before max_depth reduction for speed) obsolete
 #perc of 0.02 gives approx 30000 points
 ppc = 30000 #points per cloud, makes perc obsolete
 unit = 1000 # 1000 for mm, 1 for m, via .py gives in mm, gui gives m
-read_color = False
+read_color = True
 
 
 
@@ -36,7 +36,7 @@ size_list = []
 def pcd2bin(pcd_data, output_path):
     num_points = np.shape(pcd_data)[0]
     points = np.zeros([num_points, 6], dtype=np.float32)
-    points[: , :3] = pcd_data
+    points[: , :3] = pcd_data[:,:3]
 
 
     mask2 = points[:,2] < max_depth*unit
@@ -49,7 +49,9 @@ def pcd2bin(pcd_data, output_path):
 
     points[:, :3] = points[:, :3] * (scale / unit)
     if read_color:
-        pass
+        for i in range(len(points)):
+            char_array = struct.unpack('BBBB', pcd_data[i,3])
+            points[i,3:] = char_array[:3]
     else:
         points_color = np.random.randint(size= (len(points), 3),low=0, high=255)
         points[:,3:] = points_color
@@ -101,8 +103,8 @@ while i<10000:
     if i % downsampling == 0:
         zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA)
         output_path = output_base + "/" + str(int(i/downsampling)) + ".bin"
-        point_cloud_np = point_cloud.get_data()[:, :, :3]
-        point_cloud_np = point_cloud_np.reshape((-1, 3))
+        point_cloud_np = point_cloud.get_data()[:, :, :4]
+        point_cloud_np = point_cloud_np.reshape((-1, 4))
         pcd2bin(point_cloud_np,output_path)
         #point_cloud.write(output_path)
         print("Created file "+ str(int(i/downsampling)))
