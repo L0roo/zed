@@ -17,13 +17,11 @@ from mmdet3d.apis import LidarDet3DInferencer
 # needs to be run in mmdetection env
 
 
-downsampling = 50 # each x frame is used
+downsampling = 5 # each x frame is used
 
-max_depth = 2.5 # in m (runs only on z coordinate)
+max_depth = 2.0 # in m (runs only on z coordinate)
 scale = 3 # scale up a bit gives higher pred scores
-perc = 0.02 # percentage of points to keep,  higher percentage, might need higher scaling (is applied before max_depth reduction for speed) obsolete
-#perc of 0.02 gives approx 30000 points
-ppc = 30000 #points per cloud, makes perc obsolete
+ppc = 10000 #points per cloud, makes perc obsolete
 unit = 1000 # 1000 for mm, 1 for m, via .py gives in mm, gui gives m
 read_color = True
 
@@ -38,6 +36,7 @@ rot_mat_y = np.array([[np.cos(deg_y), 0, np.sin(deg_y)], [0, 1, 0], [-np.sin(deg
 rot_mat_z = np.array([[np.cos(deg_z), -np.sin(deg_z), 0], [np.sin(deg_z), np.cos(deg_z), 0], [0, 0, 1]])
 
 size_list = []
+time_list = []
 
 def pcd2bin(pcd_data):
     num_points = np.shape(pcd_data)[0]
@@ -161,10 +160,11 @@ def main():
 
     point_cloud = sl.Mat()
     i = 0
-    st = time.time()
+    start_time = time.time()
     while i < 10000:
         if zed.grab() == sl.ERROR_CODE.SUCCESS:
             if i % downsampling == 0:
+                st = time.time()
                 zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA)
                 point_cloud_np = point_cloud.get_data()[:, :, :4]
                 point_cloud_np = point_cloud_np.reshape((-1, 4))
@@ -172,22 +172,24 @@ def main():
                 call_args['inputs'] = dict(points=points)
                 inferencer.num_visualized_imgs = i  # can not generate output files else
                 inferencer(**call_args)
-                print("showing file " + str(i))
+                print("showing frame " + str(int(i/downsampling+1)))
                 if call_args['out_dir'] != '' and not (call_args['no_save_vis']
                                                        and call_args['no_save_pred']):
                     print_log(
                         f'results have been saved at {call_args["out_dir"]}',
                         logger='current')
-
-            # Get frame count
-            svo_position = zed.get_svo_position()
+                et = time.time()
+                time_dif = round(et-st,4)
+                time_list.append(time_dif)
+                print("Inference on frame in "+str(time_dif)+" s")
             i += 1
         elif zed.grab() == sl.ERROR_CODE.END_OF_SVOFILE_REACHED:
-            print("SVO end has been reached. " + str(int(i / downsampling) + 1) + " pcd files generated")
-            et = time.time()
-            time_dif = et - st
+            end_time = time.time()
+            time_dif = end_time - start_time
             time_pf = round(time_dif / (int(i / downsampling) + 1), 4)
-            print("Time per file: " + str(time_pf) + " s")
+            print("Average time per frame: " + str(time_pf) + " s")
+            print("Average time per frame (time on used frames only): " + str(round(np.mean(time_list),4)) + " s")
+            print("Average FPS: "+str(round(1/time_pf,4)))
             break
     zed.close()
     print("Average points per cloud: " + str(round(np.mean(size_list), 0)))
