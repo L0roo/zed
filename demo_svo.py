@@ -30,13 +30,23 @@ downsampling = 5 # each x frame is used
 max_frames = 50
 
 max_depth = 100.0 # in m (runs only on z coordinate) set above 50 to disable
-max_dist = 3.0
-scale = 1.5 # scale up a bit gives higher pred scores
+max_dist = 4.0
+scale = 1.0 # scale up a bit gives higher pred scores
 ppc = 50000 #points per cloud, makes perc obsolete
 read_color = True
+rotate_quat = False
 
 
-unit = 1000 # 1000 for mm, 1 for m, via .py gives in mm, gui gives m (use 1000)
+quaternion_matrix_1=np.array([[-0.2472, 0.7015, -0.6684, 0.8397],
+ [-0.9609, -0.0887, 0.2623, -0.2136],
+ [0.1247, 0.7071, 0.6960, -0.7072],
+ [0.0000, 0.0000, 0.0000, 1.0000]])
+
+quaternion_matrix_2 = np.array([[0.8580, -0.1040, 0.5030, -0.5229],
+ [0.5100, 0.2892, -0.8101, 0.8699],
+ [-0.0612, 0.9516, 0.3012, -0.6123],
+ [0.0000, 0.0000, 0.0000, 1.0000]])
+
 
 #not used at the moment
 deg_x = np.deg2rad(0)
@@ -47,6 +57,7 @@ rot_mat_y = np.array([[np.cos(deg_y), 0, np.sin(deg_y)], [0, 1, 0], [-np.sin(deg
 rot_mat_z = np.array([[np.cos(deg_z), -np.sin(deg_z), 0], [np.sin(deg_z), np.cos(deg_z), 0], [0, 0, 1]])
 np.random.seed(427)
 
+unit = 1000 # 1000 for mm, 1 for m, via .py gives in mm, gui gives m (use 1000)
 size_list = []
 time_list = []
 inferencer_time_list = []
@@ -55,6 +66,7 @@ depth_filter_time_list = []
 sub_filter_time_list = []
 color_filter_time_list = []
 pos_time_list = []
+quat_time_list = []
 
 
 
@@ -161,6 +173,18 @@ def pcd2bin(point_cloud):
 
 
 
+    # rotate wit quaternion matrix
+    st_quat = time.time()
+    if rotate_quat:
+        ones = np.ones((points.shape[0], 1))
+        homogeneous_points = np.hstack((points[:,:3], ones))
+
+        # Apply the quaternion rotation
+        transformed_point_cloud_homogeneous = homogeneous_points @ quaternion_matrix_1.T
+
+        # Convert back to Cartesian coordinates (Nx3 array)
+        points[:,:3] = transformed_point_cloud_homogeneous[:, :3]
+    et_quat = time.time()
 
 
     #rotate points
@@ -178,6 +202,7 @@ def pcd2bin(point_cloud):
     depth_filter_time_list.append(et_depth-st_depth)
     sub_filter_time_list.append(et_sub-st_sub)
     color_filter_time_list.append(et_color-st_color)
+    quat_time_list.append(et_quat-st_quat)
 
     return points
 
@@ -248,6 +273,7 @@ def main():
     print("Average time per frame (depth filter): " + str(round(np.mean(depth_filter_time_list), 4) * 1000) + " ms")
     print("Average time per frame (subsample): " + str(round(np.mean(sub_filter_time_list), 4) * 1000) + " ms")
     print("Average time per frame (color): " + str(round(np.mean(color_filter_time_list), 4) * 1000) + " ms")
+    print("Average time per frame (quat rotation): " + str(round(np.mean(quat_time_list), 4) * 1000) + " ms")
     print("Average FPS: " + str(round(1000 / time_pf, 4)))
     print("Average points per cloud: " + str(round(np.mean(size_list), 0)))
 
