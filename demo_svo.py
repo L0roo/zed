@@ -29,13 +29,14 @@ important: if no prediction score is above the threshold, no image will be displ
 downsampling = 5 # each x frame is used
 max_frames = 50
 
-max_depth = 2.0 # in m (runs only on z coordinate)
-scale = 3 # scale up a bit gives higher pred scores
-ppc = 10000 #points per cloud, makes perc obsolete
-unit = 1000 # 1000 for mm, 1 for m, via .py gives in mm, gui gives m
+max_depth = 100.0 # in m (runs only on z coordinate) set above 50 to disable
+max_dist = 3.0
+scale = 1.5 # scale up a bit gives higher pred scores
+ppc = 50000 #points per cloud, makes perc obsolete
 read_color = True
 
 
+unit = 1000 # 1000 for mm, 1 for m, via .py gives in mm, gui gives m (use 1000)
 
 #not used at the moment
 deg_x = np.deg2rad(0)
@@ -129,8 +130,12 @@ def pcd2bin(point_cloud):
     points = points.reshape((-1, 4))
 
     st_depth = time.time()
-    mask2 = points[:,2] < max_depth*unit
-    points = points[mask2]
+    if max_depth < 50:
+        mask2 = points[:,2] < max_depth*unit
+        points = points[mask2]
+    if max_dist < 50:
+        mask3 = np.linalg.norm(points[:,:3], axis=1) < max_dist*unit
+        points = points[mask3]
     et_depth = time.time()
 
     #subsample
