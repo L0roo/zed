@@ -6,6 +6,7 @@ import numpy as np
 import time
 import pyzed.sl as sl
 import struct
+import open3d as o3d
 
 from mmengine.logging import print_log
 
@@ -32,25 +33,28 @@ downsampling = 5 # each x frame is used
 max_frames = 50
 
 max_depth = 100.6 # in m (runs only on z coordinate) set above 50 to disable
-max_dist = 1.6
-scale = 5.0 # scale up a bit gives higher pred scores
-ppc = 80000 #points per cloud, makes perc obsolete
+max_dist = 1.4
+scale = 10.0 # scale up a bit gives higher pred scores
+ppc = 50000 #points per cloud, makes perc obsolete
+filter_scale = 2.0 #need to initialy sample more points to compensate for points filtered out
 read_color = True
 rotate = True
+outlier_removal = True
+depth_filter = True
 
 
-hrot_matrix=np.array([[-0.2472, 0.7015, -0.6684, 0.8397],
+hrot_matrix_1=np.array([[-0.2472, 0.7015, -0.6684, 0.8397],
  [-0.9609, -0.0887, 0.2623, -0.2136],
  [0.1247, 0.7071, 0.6960, -0.7072],
  [0.0000, 0.0000, 0.0000, 1.0000]])
 
-hrot_matrix_2 = np.array([[0.8580, -0.1040, 0.5030, -0.5229],
+hrot_matrix = np.array([[0.8580, -0.1040, 0.5030, -0.5229],
  [0.5100, 0.2892, -0.8101, 0.8699],
  [-0.0612, 0.9516, 0.3012, -0.6123],
  [0.0000, 0.0000, 0.0000, 1.0000]])
 
-scaled_hrot_matrix = hrot_matrix
-scaled_hrot_matrix[3, :3] = scaled_hrot_matrix[3, :3] * scale
+#scaled_hrot_matrix = hrot_matrix
+#scaled_hrot_matrix[3, :3] = scaled_hrot_matrix[3, :3] * scale
 
 
 #not used at the moment
@@ -142,65 +146,84 @@ def parse_args():
 
 
 
-def pcd2bin(point_cloud):
+def filter_points(point_cloud):
     points = point_cloud.get_data()[:, :, :4]
     points = points.reshape((-1, 4))
 
+
+
+    # depth/dist filter
     st_depth = time.time()
-    if max_depth < 50:
-        mask2 = points[:,2] < max_depth*unit
-        points = points[mask2]
-    if max_dist < 50:
-        mask3 = np.linalg.norm(points[:,:3], axis=1) < max_dist*unit
-        points = points[mask3]
+    if depth_filter:
+        if max_depth < 50:
+            mask2 = points[:,2] < max_depth*unit
+            points = points[mask2]
+        if max_dist < 50:
+            mask3 = np.linalg.norm(points[:,:3], axis=1) < max_dist*unit
+            points = points[mask3]
     et_depth = time.time()
 
-    #subsample
+
+    # subsample
     st_sub = time.time()
-    perc = ppc / len(points)
+    perc = ppc*filter_scale / len(points)
     mask = np.random.choice([True, False], size=len(points), p=[perc, 1-perc])
     points = points[mask]
     et_sub = time.time()
 
-    st_color = time.time()
-    points[:, :3] = points[:, :3] * (scale / unit)
-    if read_color:
-        col_list = []
-        for i in range(len(points)):
-            col_list.append(struct.unpack('BBBB', points[i,3])[:3])
-        points = np.hstack((points[:,:3],np.array(col_list)))
-
-    else:
-        points_color = np.random.randint(size= (len(points), 3),low=0, high=255)
-        points = np.hstack((points[:,:3],points_color))
-    et_color = time.time()
+    if outlier_removal:
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(points[:,:3])
+        cl, ind = pcd.remove_statistical_outlier(nb_neighbors=40,std_ratio=1.0)
+        points = points[ind]
 
 
 
 
-    # rotate wit quaternion matrix
+
+
+
+
+    # rotate with matrix
     st_quat = time.time()
     if rotate:
         ones = np.ones((points.shape[0], 1))
         homogeneous_points = np.hstack((points[:,:3], ones))
-
-        hom_transformed = (scaled_hrot_matrix @ homogeneous_points.T).T
-
-        # Apply the quaternion rotation, seems to do the same thing as above
-        #transformed_point_cloud_homogeneous = homogeneous_points @ hrot_matrix_1.T
-
-        # Convert back to Cartesian coordinates (Nx3 array)
+        hom_transformed = (hrot_matrix @ homogeneous_points.T).T
         points[:,:3] = hom_transformed[:, :3]
     et_quat = time.time()
 
-
-    #rotate points
-    #for i in range(len(points)):
+    # rotate points
+    # for i in range(len(points)):
     #    points[i,:3]= np.matmul(rot_mat_x,points[i,:3])
     #    points[i,:3]= np.matmul(rot_mat_y,points[i,:3])
     #    points[i,:3]= np.matmul(rot_mat_z,points[i,:3])
 
 
+
+
+
+
+    # scale
+
+
+
+
+
+    st_color = time.time()
+    if read_color:
+        col_list = []
+        for i in range(len(points)):
+            col_list.append(struct.unpack('BBBB', points[i, 3])[:3])
+        points = np.hstack((points[:, :3], np.array(col_list)))
+
+    else:
+        points_color = np.random.randint(size=(len(points), 3), low=0, high=255)
+        points = np.hstack((points[:, :3], points_color))
+    et_color = time.time()
+
+    # scale points
+    points[:, :3] = points[:, :3] * (scale / unit)
 
     points = points.astype(np.float32)
     print(np.shape(points))
@@ -239,7 +262,7 @@ def main():
                 frame_counter +=1
                 zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA)
                 st_filter = time.time()
-                call_args['inputs'] = dict(points=pcd2bin(point_cloud))
+                call_args['inputs'] = dict(points=filter_points(point_cloud))
                 et_filter = time.time()
                 inferencer.num_visualized_imgs = i  # can not generate output files else
                 st_inferencer = time.time()
