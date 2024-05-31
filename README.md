@@ -1,4 +1,6 @@
 # Object Detection in 3D using point clouds obtained from ZED Stereocamera
+## .py files
+demo_svo.py runs inference on svo files directly
 
 ## Installation
 Installation of packages is a bit complicated and messy. I followed the installation instructions from mmdetection3d and MinkowskiEngine, but had to change quiet some things.
@@ -27,10 +29,23 @@ git clone https://github.com/NVIDIA/MinkowskiEngine.git
 cd MinkowskiEngine
 
 Now you need to add some lines to some files:
-follow https://github.com/NVIDIA/MinkowskiEngine/issues/543
-also in src/convolution_gpu.cu and in /src/broadcast_gpu.cu  
-
-add:
+1 - .../MinkowskiEngine/src/convolution_kernel.cuh
+Add header:
+#include <thrust/execution_policy.h>
+2 - .../MinkowskiEngine/src/coordinate_map_gpu.cu
+Add headers:
+#include <thrust/unique.h>
+#include <thrust/remove.h>
+3 - .../MinkowskiEngine/src/spmm.cu
+Add headers:
+#include <thrust/execution_policy.h>
+#include <thrust/reduce.h> 
+#include <thrust/sort.h>
+4 - .../MinkowskiEngine/src/3rdparty/concurrent_unordered_map.cuh
+Add header:
+#include <thrust/execution_policy.h>
+5 - .../MinkowskiEngine/src/convolution_gpu.cu and in .../MinkowskiEngine/src/broadcast_gpu.cu
+Add headers:
 #include <thrust/execution_policy.h>
 #include <thrust/unique.h>
 #include <thrust/remove.h>
@@ -38,7 +53,7 @@ add:
 #include <thrust/sort.h>
 
 
-Then do:
+Then you should be able to run:
 python setup.py install --user
 pip install open3d
 ```
