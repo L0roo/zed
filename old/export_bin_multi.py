@@ -8,7 +8,7 @@ import time
 import struct
 
 # Set SVO path for playback
-input_path = "data/HD1080_SN34783283_15-12-38.svo"
+input_path = "../data/HD1080_SN34783283_15-12-38.svo"
 output_base = "data/bin/multi5"
 downsampling = 5 # each x frame is used
 

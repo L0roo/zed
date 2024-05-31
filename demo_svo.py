@@ -19,8 +19,10 @@ download chosen model, set path accordingly in example below
 adjust parameters in this file
 example:
 python demo_svo.py "data/HD1080_SN34783283_15-12-38.svo" /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/projects/TR3D/configs/tr3d_1xb16_scannet-3d-18class.py /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/pdz/tr3d_1xb16_scannet-3d-18class.pth --pred-score-thr=0.09 --wait-time=0.0 --show
+or alternatively
+python demo_svo.py "data/small_object_svo/HD2K_SN38580376_small_obj.svo2" /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/configs/fcaf3d/fcaf3d_2xb8_scannet-3d-18class.py /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/pdz/fcaf3d_8x2_scannet-3d-18class_20220805_084956.pth --pred-score-thr=0.09 --show 
 
-important: if no prediction score is above the threshold, no image will be displayed
+important: if no prediction score is above the threshold, no image will be displayed, wait time to 0 to change frames automatically
 
 '''
 
@@ -30,19 +32,19 @@ downsampling = 5 # each x frame is used
 max_frames = 50
 
 max_depth = 100.6 # in m (runs only on z coordinate) set above 50 to disable
-max_dist = 1.5
-scale = 6.0 # scale up a bit gives higher pred scores
-ppc = 30000 #points per cloud, makes perc obsolete
+max_dist = 1.6
+scale = 5.0 # scale up a bit gives higher pred scores
+ppc = 80000 #points per cloud, makes perc obsolete
 read_color = True
 rotate = True
 
 
-hrot_matrix_l=np.array([[-0.2472, 0.7015, -0.6684, 0.8397],
+hrot_matrix=np.array([[-0.2472, 0.7015, -0.6684, 0.8397],
  [-0.9609, -0.0887, 0.2623, -0.2136],
  [0.1247, 0.7071, 0.6960, -0.7072],
  [0.0000, 0.0000, 0.0000, 1.0000]])
 
-hrot_matrix = np.array([[0.8580, -0.1040, 0.5030, -0.5229],
+hrot_matrix_2 = np.array([[0.8580, -0.1040, 0.5030, -0.5229],
  [0.5100, 0.2892, -0.8101, 0.8699],
  [-0.0612, 0.9516, 0.3012, -0.6123],
  [0.0000, 0.0000, 0.0000, 1.0000]])
@@ -220,6 +222,7 @@ def main():
     input_path = call_args.pop('svo_file')
     init_parameters = sl.InitParameters()
     init_parameters.set_from_svo_file(input_path)
+    init_parameters.depth_mode = sl.DEPTH_MODE.NEURAL_PLUS
 
     # Open the ZED
     zed = sl.Camera()

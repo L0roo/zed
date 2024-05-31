@@ -4,7 +4,7 @@ import numpy as np
 from mmdet3d.visualization import Det3DLocalVisualizer
 from mmdet3d.structures import LiDARInstance3DBoxes
 
-points = np.fromfile('data/bin/test_gui.bin', dtype=np.float32)
+points = np.fromfile('../data/bin/test_gui.bin', dtype=np.float32)
 points = points.reshape(-1, 6)
 visualizer = Det3DLocalVisualizer()
 # set point cloud in visualizer

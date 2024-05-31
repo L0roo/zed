@@ -22,7 +22,7 @@ def read_bin_velodyne(path):
 
 def main2():
     pcd = open3d.open3d.geometry.PointCloud()
-    path = "data/bin/test_gui.bin"
+    path = "../data/bin/test_gui.bin"
     path2 = "scene0000_00.bin"
     example = read_bin_velodyne(path)
     # From numpy to Open3D

@@ -8,7 +8,7 @@ import os
 zed = sl.Camera()
 
 # Set SVO path for playback
-input_path = "data/HD1080_SN34783283_15-12-38.svo"
+input_path = "../data/HD1080_SN34783283_15-12-38.svo"
 init_parameters = sl.InitParameters()
 init_parameters.set_from_svo_file(input_path)
 
