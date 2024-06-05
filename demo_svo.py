@@ -33,10 +33,10 @@ downsampling = 5 # each x frame is used
 max_frames = 50
 
 max_depth = 100.6 # in m (runs only on z coordinate) set above 50 to disable
-max_dist = 1.4
-scale = 10.0 # scale up a bit gives higher pred scores
-ppc = 50000 #points per cloud, makes perc obsolete
-filter_scale = 2.0 #need to initialy sample more points to compensate for points filtered out
+max_dist = 1.6
+scale = 4.0 # scale up a bit gives higher pred scores
+ppc = 40000 #points per cloud, makes perc obsolete
+filter_scale = 1.5 #need to initialy sample more points to compensate for points filtered out
 read_color = True
 rotate = True
 outlier_removal = True
@@ -167,6 +167,7 @@ def filter_points(point_cloud):
     # subsample
     st_sub = time.time()
     perc = ppc*filter_scale / len(points)
+    if perc > 1: perc = 1
     mask = np.random.choice([True, False], size=len(points), p=[perc, 1-perc])
     points = points[mask]
     et_sub = time.time()
@@ -174,7 +175,7 @@ def filter_points(point_cloud):
     if outlier_removal:
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(points[:,:3])
-        cl, ind = pcd.remove_statistical_outlier(nb_neighbors=40,std_ratio=1.0)
+        cl, ind = pcd.remove_statistical_outlier(nb_neighbors=40,std_ratio=1.5)
         points = points[ind]
 
 

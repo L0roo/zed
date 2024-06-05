@@ -29,16 +29,17 @@ important: if no prediction score is above the threshold, no image will be displ
 
 
 downsampling = 5 # each x frame is used
-max_frames = 2
+max_frames = 1
 
 max_depth = 100.6 # in m (runs only on z coordinate) set above 50 to disable
-max_dist = 1.4
+max_dist = 1.3
 scale = 10.0 # scale up a bit gives higher pred scores
 ppc = 50000 #points per cloud, makes perc obsolete
-filter_scale = 2.0 #need to initialy sample more points to compensate for points filtered out
+filter_scale = 1.4 #need to initialy sample more points to compensate for points filtered out
 read_color = True
 rotate = True
 outlier_removal = True
+std_ratio = 1.5
 depth_filter = True
 
 
@@ -173,7 +174,7 @@ def filter_points(point_cloud):
     if outlier_removal:
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(points[:,:3])
-        cl, ind = pcd.remove_statistical_outlier(nb_neighbors=40,std_ratio=1.0)
+        cl, ind = pcd.remove_statistical_outlier(nb_neighbors=40,std_ratio=std_ratio)
         points = points[ind]
 
 
@@ -243,6 +244,7 @@ def main():
     input_path = call_args.pop('svo_file')
     init_parameters = sl.InitParameters()
     init_parameters.set_from_svo_file(input_path)
+    init_parameters.depth_mode = sl.DEPTH_MODE.NEURAL_PLUS
 
     # Open the ZED
     zed = sl.Camera()

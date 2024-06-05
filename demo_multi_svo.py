@@ -28,7 +28,10 @@ important: if no prediction score is above the threshold, no image will be displ
 
 '''
 
+sec_input_path_vid = "data/small_object_svo/HD2K_small2.svo2"
 sec_input_path = "data/bin/small2"
+sec_shift_vec = np.array([-5.3, 4.4, 0.36]) #somewhat tuned for scale 4
+sec_shift_vec_0 = np.array([0,0,0])
 
 
 downsampling = 5 # each x frame is used
@@ -36,7 +39,7 @@ max_frames = 50
 
 max_depth = 100.6 # in m (runs only on z coordinate) set above 50 to disable
 max_dist = 1.6
-scale = 1.0 # scale up a bit gives higher pred scores
+scale = 4.0 # scale up a bit gives higher pred scores
 ppc = 40000 #points per cloud, makes perc obsolete
 filter_scale = 1.5 #need to initialy sample more points to compensate for points filtered out
 read_color = True
@@ -250,10 +253,11 @@ def main():
     init_parameters = sl.InitParameters()
     init_parameters.set_from_svo_file(input_path)
     init_parameters.depth_mode = sl.DEPTH_MODE.NEURAL_PLUS
-
     # Open the ZED
     zed = sl.Camera()
     err = zed.open(init_parameters)
+
+
 
     point_cloud = sl.Mat()
     i=0
@@ -270,6 +274,7 @@ def main():
                 sec_path = sec_input_path + "/"+str(frame_counter)+".bin"
                 points2 = np.fromfile(sec_path, dtype=np.float32)
                 points2 = points2.reshape(-1, 6)
+                points2[:,:3]+=sec_shift_vec
                 points = np.vstack((points1,points2))
                 call_args['inputs'] = dict(points=points)
                 et_filter = time.time()
