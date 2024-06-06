@@ -20,9 +20,9 @@ download chosen model, set path accordingly in example below
 generate pointcloud bin files for HD2K_small2, read directly from small1
 adjust parameters in this file
 example:
-python demo_svo.py "data/HD1080_SN34783283_15-12-38.svo" /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/projects/TR3D/configs/tr3d_1xb16_scannet-3d-18class.py /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/pdz/tr3d_1xb16_scannet-3d-18class.pth --pred-score-thr=0.09 --wait-time=0.0 --show
+python demo_multi_svo2.py /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/projects/TR3D/configs/tr3d_1xb16_scannet-3d-18class.py /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/pdz/tr3d_1xb16_scannet-3d-18class.pth --pred-score-thr=0.09 --wait-time=0.0 --show
 or alternatively
-python demo_svo.py "data/small_object_svo/HD2K_SN38580376_small_obj.svo2" /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/configs/fcaf3d/fcaf3d_2xb8_scannet-3d-18class.py /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/pdz/fcaf3d_8x2_scannet-3d-18class_20220805_084956.pth --pred-score-thr=0.09 --show 
+python demo_multi_svo2.py /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/configs/fcaf3d/fcaf3d_2xb8_scannet-3d-18class.py /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/pdz/fcaf3d_8x2_scannet-3d-18class_20220805_084956.pth --pred-score-thr=0.09 --show 
 
 important: if no prediction score is above the threshold, no image will be displayed, wait time to 0 to change frames automatically
 
@@ -35,13 +35,13 @@ sec_shift_vec = np.array([-1.3,1.07,0.09])
 
 
 downsampling = 5 # each x frame is used
-max_frames = 50
+max_frames = 5
 
 max_depth = 100.6 # in m (runs only on z coordinate) set above 50 to disable
 max_dist = 1.5
-scale = 4.0 # scale up a bit gives higher pred scores
-ppc = 20000 #points per cloud, makes perc obsolete
-filter_scale = 1.5 #need to initialy sample more points to compensate for points filtered out
+scale = 9.0 # scale up a bit gives higher pred scores
+ppc = 60000 #points per cloud, makes perc obsolete
+filter_scale = 1.3 #need to initialy sample more points to compensate for points filtered out
 read_color = True
 rotate = True
 outlier_removal = True

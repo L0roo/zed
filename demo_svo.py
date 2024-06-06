@@ -25,22 +25,29 @@ python demo_svo.py "data/small_object_svo/HD2K_SN38580376_small_obj.svo2" /home/
 
 important: if no prediction score is above the threshold, no image will be displayed, wait time to 0 to change frames automatically
 
+TR3D scannnet: python demo_svo.py "data/small_object_svo/HD2K_small2.svo2" /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/projects/TR3D/configs/tr3d_1xb16_scannet-3d-18class.py /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/pdz/tr3d_1xb16_scannet-3d-18class.pth --pred-score-thr=0.07 --show 
+FCAF3d: python demo_svo.py "data/small_object_svo/HD2K_small2.svo2" /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/configs/fcaf3d/fcaf3d_2xb8_scannet-3d-18class.py /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/pdz/fcaf3d_8x2_scannet-3d-18class_20220805_084956.pth --pred-score-thr=0.07 --show 
+TR3D s3dis model doesn't match exacltly: python demo_svo.py "data/small_object_svo/HD2K_small2.svo2" /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/projects/TR3D/configs/tr3d_1xb16_s3dis-3d-5class.py /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/pdz/tr3d_1xb16_s3dis-3d-5class.pth --pred-score-thr=0.85 --show 
+
 '''
 
 
 
-downsampling = 5 # each x frame is used
+downsampling = 1 # each x frame is used
 max_frames = 50
 
 max_depth = 100.6 # in m (runs only on z coordinate) set above 50 to disable
-max_dist = 1.6
-scale = 4.0 # scale up a bit gives higher pred scores
-ppc = 40000 #points per cloud, makes perc obsolete
-filter_scale = 1.5 #need to initialy sample more points to compensate for points filtered out
+max_dist = 1.5
+scale = 6.0 # scale up a bit gives higher pred scores
+ppc = 60000 #points per cloud, makes perc obsolete
+filter_scale = 1.3 #need to initialy sample more points to compensate for points filtered out
 read_color = True
 rotate = True
 outlier_removal = True
+out_nb = 20
+out_std = 1.0
 depth_filter = True
+vis_col = False # if true doesn't run infernece but shows with color
 
 
 hrot_matrix_1=np.array([[-0.2472, 0.7015, -0.6684, 0.8397],
@@ -76,6 +83,7 @@ sub_filter_time_list = []
 color_filter_time_list = []
 pos_time_list = []
 quat_time_list = []
+outlier_time_list = []
 
 
 
@@ -172,44 +180,22 @@ def filter_points(point_cloud):
     points = points[mask]
     et_sub = time.time()
 
+    st_out = time.time()
     if outlier_removal:
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(points[:,:3])
-        cl, ind = pcd.remove_statistical_outlier(nb_neighbors=40,std_ratio=1.5)
+        cl, ind = pcd.remove_statistical_outlier(nb_neighbors=out_nb,std_ratio=out_std)
         points = points[ind]
+    et_out = time.time()
 
-
-
-
-
-
-
-
-    # rotate with matrix
     st_quat = time.time()
+    # rotate with matrix
     if rotate:
         ones = np.ones((points.shape[0], 1))
         homogeneous_points = np.hstack((points[:,:3], ones))
         hom_transformed = (hrot_matrix @ homogeneous_points.T).T
         points[:,:3] = hom_transformed[:, :3]
     et_quat = time.time()
-
-    # rotate points
-    # for i in range(len(points)):
-    #    points[i,:3]= np.matmul(rot_mat_x,points[i,:3])
-    #    points[i,:3]= np.matmul(rot_mat_y,points[i,:3])
-    #    points[i,:3]= np.matmul(rot_mat_z,points[i,:3])
-
-
-
-
-
-
-    # scale
-
-
-
-
 
     st_color = time.time()
     if read_color:
@@ -234,6 +220,7 @@ def filter_points(point_cloud):
     sub_filter_time_list.append(et_sub-st_sub)
     color_filter_time_list.append(et_color-st_color)
     quat_time_list.append(et_quat-st_quat)
+    outlier_time_list.append((st_out-et_out))
 
     return points
 
@@ -263,11 +250,18 @@ def main():
                 frame_counter +=1
                 zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA)
                 st_filter = time.time()
-                call_args['inputs'] = dict(points=filter_points(point_cloud))
+                points = filter_points(point_cloud)
+                call_args['inputs'] = dict(points=points)
                 et_filter = time.time()
                 inferencer.num_visualized_imgs = i  # can not generate output files else
                 st_inferencer = time.time()
-                inferencer(**call_args)
+                if vis_col:
+                    pcd = o3d.geometry.PointCloud()
+                    pcd.points = o3d.utility.Vector3dVector(points[:, :3])
+                    pcd.colors = o3d.utility.Vector3dVector(points[:, 3:] / 256)
+                    o3d.visualization.draw_geometries([pcd])
+                else:
+                    inferencer(**call_args)
                 et_inferencer = time.time()
 
                 inferencer_time_list.append(et_inferencer-st_inferencer)
@@ -304,6 +298,7 @@ def main():
     print("Average time per frame (transform pc): " + str(round(np.mean(filter_time_list), 4) * 1000) + " ms")
     print("Average time per frame (depth filter): " + str(round(np.mean(depth_filter_time_list), 4) * 1000) + " ms")
     print("Average time per frame (subsample): " + str(round(np.mean(sub_filter_time_list), 4) * 1000) + " ms")
+    print("Average time per frame (outlier removal): " + str(round(np.mean(outlier_time_list), 4) * 1000) + " ms")
     print("Average time per frame (color): " + str(round(np.mean(color_filter_time_list), 4) * 1000) + " ms")
     print("Average time per frame (quat rotation): " + str(round(np.mean(quat_time_list), 4) * 1000) + " ms")
     print("Average FPS: " + str(round(1000 / time_pf, 4)))
