@@ -64,4 +64,5 @@ pip install open3d
 - If the visualisation outputs only a white screen this means that no predicted boudning box is above the threshold. You can lower the threshold by setting the flag --pred-score-thr=0.01
 - Use flag --show for visual output
 - Use flag --wait-time=0.0, if not set it will block on the first frame
+- The installation of mmdetection3d doesn't work perfectly but seems to be okay for TR3D
 
