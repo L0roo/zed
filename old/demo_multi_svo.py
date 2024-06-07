@@ -28,8 +28,8 @@ important: if no prediction score is above the threshold, no image will be displ
 
 '''
 
-sec_input_path_vid = "data/small_object_svo/HD2K_small2.svo2"
-sec_input_path = "data/bin/small2"
+sec_input_path_vid = "../data/small_object_svo/HD2K_small2.svo2"
+sec_input_path = "../data/bin/small2"
 sec_shift_vec = np.array([-5.3, 4.4, 0.36]) #somewhat tuned for scale 4
 sec_shift_vec_0 = np.array([0,0,0])
 

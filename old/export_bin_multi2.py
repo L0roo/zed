@@ -9,7 +9,7 @@ import struct
 import open3d as o3d
 
 # Set SVO path for playback
-input_path = "data/small_object_svo/HD2K_small2.svo2"
+input_path = "../data/small_object_svo/HD2K_small2.svo2"
 output_base = "data/bin/small2"
 
 #make sure parameters are the same
