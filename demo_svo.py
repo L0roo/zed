@@ -1,4 +1,3 @@
-# Copyright (c) OpenMMLab. All rights reserved.
 import logging
 import os
 from argparse import ArgumentParser
@@ -15,15 +14,16 @@ from mmdet3d.apis import LidarDet3DInferencer
 
 '''
 To run this file: 
-mmdetection3d environment with minkowski engine
-download chosen model, set path accordingly in example below
+mmdetection3d environment with minkowski engine (tricky, see readme)
+download chosen model and configuration, set path accordingly in example below
+svo file from zed camer, also set path
 adjust parameters in this file
 example:
 python demo_svo.py "data/HD1080_SN34783283_15-12-38.svo" /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/projects/TR3D/configs/tr3d_1xb16_scannet-3d-18class.py /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/pdz/tr3d_1xb16_scannet-3d-18class.pth --pred-score-thr=0.09 --wait-time=0.0 --show
 or alternatively
 python demo_svo.py "data/small_object_svo/HD2K_SN38580376_small_obj.svo2" /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/configs/fcaf3d/fcaf3d_2xb8_scannet-3d-18class.py /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/pdz/fcaf3d_8x2_scannet-3d-18class_20220805_084956.pth --pred-score-thr=0.09 --show 
 
-important: if no prediction score is above the threshold, no image will be displayed, wait time to 0 to change frames automatically
+important: if no prediction score is above the threshold no image will be displayed, set wait time to 0 to change frames automatically
 
 TR3D scannnet: python demo_svo.py "data/small_object_svo/HD2K_small2.svo2" /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/projects/TR3D/configs/tr3d_1xb16_scannet-3d-18class.py /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/pdz/tr3d_1xb16_scannet-3d-18class.pth --pred-score-thr=0.07 --show 
 FCAF3d: python demo_svo.py "data/small_object_svo/HD2K_small2.svo2" /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/configs/fcaf3d/fcaf3d_2xb8_scannet-3d-18class.py /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/pdz/fcaf3d_8x2_scannet-3d-18class_20220805_084956.pth --pred-score-thr=0.07 --show 
@@ -33,21 +33,21 @@ TR3D s3dis model doesn't match exacltly: python demo_svo.py "data/small_object_s
 
 
 
-downsampling = 1 # each x frame is used
-max_frames = 50
+downsampling = 1 # each x frame is used (takes some time to skip frames)
+max_frames = 50 # amount of frames till end
 
 max_depth = 100.6 # in m (runs only on z coordinate) set above 50 to disable
-max_dist = 1.5
-scale = 2.0 # scale up a bit gives higher pred scores
-ppc = 10000 #points per cloud, makes perc obsolete
+max_dist = 1.5 # in m, set above 50 to disable
+scale = 5.0 # scale up a bit gives higher pred scores since original net was trained on larger scenes
+ppc = 50000 #points per cloud
 filter_scale = 5.4 #need to initialy sample more points to compensate for points filtered out (small2: 5.4 for dist 1.5,no outlier)
-read_color = True
-rotate = True
-outlier_removal = False
-out_nb = 20
+read_color = True # read color or choose random colors
+rotate = True # rotate and translate according to homogenous transform matrix hrot_matrix
+outlier_removal = False # have open3d remove statistical outliers
+depth_filter = True # have depth filter active
+vis_col = True # if true doesn't run infernece but shows with color
+out_nb = 20 # parameters for outlier removal
 out_std = 1.0
-depth_filter = True
-vis_col = False # if true doesn't run infernece but shows with color
 
 
 hrot_matrix_1=np.array([[-0.2472, 0.7015, -0.6684, 0.8397],
@@ -60,22 +60,13 @@ hrot_matrix = np.array([[0.8580, -0.1040, 0.5030, -0.5229],
  [-0.0612, 0.9516, 0.3012, -0.6123],
  [0.0000, 0.0000, 0.0000, 1.0000]])
 
-#scaled_hrot_matrix = hrot_matrix
-#scaled_hrot_matrix[3, :3] = scaled_hrot_matrix[3, :3] * scale
 
+np.random.seed(427) # fix random seed for repeatability
 
-#not used at the moment
-deg_x = np.deg2rad(0)
-deg_y = np.deg2rad(0)
-deg_z = np.deg2rad(0)
-rot_mat_x = np.array([[1, 0, 0], [0, np.cos(deg_x), -np.sin(deg_x)], [0, np.sin(deg_x), np.cos(deg_x)]])
-rot_mat_y = np.array([[np.cos(deg_y), 0, np.sin(deg_y)], [0, 1, 0], [-np.sin(deg_y), 0, np.cos(deg_y)]])
-rot_mat_z = np.array([[np.cos(deg_z), -np.sin(deg_z), 0], [np.sin(deg_z), np.cos(deg_z), 0], [0, 0, 1]])
-np.random.seed(427)
+unit = 1000
 
-unit = 1000 # 1000 for mm, 1 for m, via .py gives in mm, gui gives m (use 1000)
-size_list = []
-time_list = []
+size_list = [] # size of point clouds statistics
+time_list = [] # time lists for time statistics
 inferencer_time_list = []
 filter_time_list = []
 depth_filter_time_list = []
@@ -156,6 +147,11 @@ def parse_args():
 
 
 def filter_points(point_cloud):
+    '''
+
+    :param point_cloud: Pointcloud from zed.retrieve_measure
+    :return: filtered and transformed pointcloud  in numpy array
+    '''
     points = point_cloud.get_data()[:, :, :4]
     points = points.reshape((-1, 4))
 
@@ -180,9 +176,7 @@ def filter_points(point_cloud):
             points = points[mask3]
     et_depth = time.time()
 
-
-
-
+    # oulier removal
     st_out = time.time()
     if outlier_removal:
         pcd = o3d.geometry.PointCloud()
@@ -191,8 +185,8 @@ def filter_points(point_cloud):
         points = points[ind]
     et_out = time.time()
 
-    st_quat = time.time()
     # rotate with matrix
+    st_quat = time.time()
     if rotate:
         ones = np.ones((points.shape[0], 1))
         homogeneous_points = np.hstack((points[:,:3], ones))
@@ -200,6 +194,7 @@ def filter_points(point_cloud):
         points[:,:3] = hom_transformed[:, :3]
     et_quat = time.time()
 
+    # get colors
     st_color = time.time()
     if read_color:
         col_list = []
@@ -208,6 +203,7 @@ def filter_points(point_cloud):
         points = np.hstack((points[:, :3], np.array(col_list)))
 
     else:
+        # random colors
         points_color = np.random.randint(size=(len(points), 3), low=0, high=255)
         points = np.hstack((points[:, :3], points_color))
     et_color = time.time()
@@ -236,7 +232,7 @@ def main():
     input_path = call_args.pop('svo_file')
     init_parameters = sl.InitParameters()
     init_parameters.set_from_svo_file(input_path)
-    init_parameters.depth_mode = sl.DEPTH_MODE.NEURAL
+    init_parameters.depth_mode = sl.DEPTH_MODE.NEURAL # NEURAL_PLUS better but slower than NEURAL
 
     # Open the ZED
     zed = sl.Camera()
@@ -254,9 +250,11 @@ def main():
                 st_zed = time.time()
                 zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA)
                 et_zed = time.time()
+
                 st_filter = time.time()
                 call_args['inputs'] = dict(points=filter_points(point_cloud))
                 et_filter = time.time()
+
                 st_inferencer = time.time()
                 inferencer.num_visualized_imgs = i  # can not generate output files else
                 if vis_col:
