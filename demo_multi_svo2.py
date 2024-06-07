@@ -1,4 +1,3 @@
-# Copyright (c) OpenMMLab. All rights reserved.
 import logging
 import os
 from argparse import ArgumentParser
@@ -14,6 +13,8 @@ from mmdet3d.apis import LidarDet3DInferencer
 
 
 '''
+takes two svo files as input und fuses their pointclouds according to rotation matrix and additional shift
+for better documentation see demo_svo.py
 To run this file: 
 mmdetection3d environment with minkowski engine
 download chosen model, set path accordingly in example below
@@ -28,14 +29,14 @@ important: if no prediction score is above the threshold, no image will be displ
 
 '''
 
-input_path_1 = "data/small_object_svo/HD2K_small1.svo2"
+input_path_1 = "data/small_object_svo/HD2K_small1.svo2" # specify path to the two svo files
 input_path_2 = "data/small_object_svo/HD2K_small2.svo2"
 sec_shift_vec_0 = np.array([0,0,0])
-sec_shift_vec = np.array([-1.3,1.07,0.09])
+sec_shift_vec = np.array([-1.3,1.07,0.09]) # add shift if no alignment after homogenous transformation or use 0 vetor if okay
 
 
 downsampling = 5 # each x frame is used
-max_frames = 5
+max_frames = 1
 
 max_depth = 100.6 # in m (runs only on z coordinate) set above 50 to disable
 max_dist = 1.5
@@ -49,6 +50,7 @@ depth_filter = True
 vis_col = False # if true doesn't run infernece but shows with color
 
 
+# transformation matrix for first and second camera respectively
 hrot_matrix_1=np.array([[-0.2472, 0.7015, -0.6684, 0.8397],
  [-0.9609, -0.0887, 0.2623, -0.2136],
  [0.1247, 0.7071, 0.6960, -0.7072],
