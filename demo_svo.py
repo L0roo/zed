@@ -38,12 +38,12 @@ max_frames = 50
 
 max_depth = 100.6 # in m (runs only on z coordinate) set above 50 to disable
 max_dist = 1.5
-scale = 6.0 # scale up a bit gives higher pred scores
-ppc = 60000 #points per cloud, makes perc obsolete
-filter_scale = 1.3 #need to initialy sample more points to compensate for points filtered out
+scale = 2.0 # scale up a bit gives higher pred scores
+ppc = 10000 #points per cloud, makes perc obsolete
+filter_scale = 5.4 #need to initialy sample more points to compensate for points filtered out (small2: 5.4 for dist 1.5,no outlier)
 read_color = True
 rotate = True
-outlier_removal = True
+outlier_removal = False
 out_nb = 20
 out_std = 1.0
 depth_filter = True
@@ -84,6 +84,7 @@ color_filter_time_list = []
 pos_time_list = []
 quat_time_list = []
 outlier_time_list = []
+zed_time_list = []
 
 
 
@@ -159,6 +160,14 @@ def filter_points(point_cloud):
     points = points.reshape((-1, 4))
 
 
+    # subsample
+    st_sub = time.time()
+    perc = ppc*filter_scale / len(points)
+    if perc > 1: perc = 1
+    mask = np.random.choice([True, False], size=len(points), p=[perc, 1-perc])
+    points = points[mask]
+    et_sub = time.time()
+
 
     # depth/dist filter
     st_depth = time.time()
@@ -172,13 +181,7 @@ def filter_points(point_cloud):
     et_depth = time.time()
 
 
-    # subsample
-    st_sub = time.time()
-    perc = ppc*filter_scale / len(points)
-    if perc > 1: perc = 1
-    mask = np.random.choice([True, False], size=len(points), p=[perc, 1-perc])
-    points = points[mask]
-    et_sub = time.time()
+
 
     st_out = time.time()
     if outlier_removal:
@@ -220,7 +223,7 @@ def filter_points(point_cloud):
     sub_filter_time_list.append(et_sub-st_sub)
     color_filter_time_list.append(et_color-st_color)
     quat_time_list.append(et_quat-st_quat)
-    outlier_time_list.append((st_out-et_out))
+    outlier_time_list.append((et_out-st_out))
 
     return points
 
@@ -233,7 +236,7 @@ def main():
     input_path = call_args.pop('svo_file')
     init_parameters = sl.InitParameters()
     init_parameters.set_from_svo_file(input_path)
-    init_parameters.depth_mode = sl.DEPTH_MODE.NEURAL_PLUS
+    init_parameters.depth_mode = sl.DEPTH_MODE.NEURAL
 
     # Open the ZED
     zed = sl.Camera()
@@ -248,15 +251,17 @@ def main():
             if i % downsampling == 0:
                 st = time.time()
                 frame_counter +=1
+                st_zed = time.time()
                 zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA)
+                et_zed = time.time()
                 st_filter = time.time()
-                points = filter_points(point_cloud)
-                call_args['inputs'] = dict(points=points)
+                call_args['inputs'] = dict(points=filter_points(point_cloud))
                 et_filter = time.time()
-                inferencer.num_visualized_imgs = i  # can not generate output files else
                 st_inferencer = time.time()
+                inferencer.num_visualized_imgs = i  # can not generate output files else
                 if vis_col:
                     pcd = o3d.geometry.PointCloud()
+                    points = filter_points(point_cloud)
                     pcd.points = o3d.utility.Vector3dVector(points[:, :3])
                     pcd.colors = o3d.utility.Vector3dVector(points[:, 3:] / 256)
                     o3d.visualization.draw_geometries([pcd])
@@ -266,6 +271,7 @@ def main():
 
                 inferencer_time_list.append(et_inferencer-st_inferencer)
                 filter_time_list.append(et_filter-st_filter)
+                zed_time_list.append(et_zed-st_zed)
 
                 print("showing frame " + str(frame_counter))
                 if call_args['out_dir'] != '' and not (call_args['no_save_vis']
@@ -290,19 +296,25 @@ def main():
     zed.close()
     end_time = time.time()
     time_dif = end_time - start_time
-    time_pf = round((time_dif / frame_counter), 4) * 1000
+    time_pf = round((time_dif / frame_counter) * 1000, 1)
     print("Average time per frame total: " + str(time_pf) + " ms")
-    print("Average time per frame (time on used frames only): " + str(round(np.mean(time_list), 4) * 1000) + " ms")
-    #print("Average time per frame (svo pos change): " + str(round(np.mean(pos_time_list), 4) * 1000) + " ms")
-    print("Average time per frame (inference): " + str(round(np.mean(inferencer_time_list), 4) * 1000) + " ms")
-    print("Average time per frame (transform pc): " + str(round(np.mean(filter_time_list), 4) * 1000) + " ms")
-    print("Average time per frame (depth filter): " + str(round(np.mean(depth_filter_time_list), 4) * 1000) + " ms")
-    print("Average time per frame (subsample): " + str(round(np.mean(sub_filter_time_list), 4) * 1000) + " ms")
-    print("Average time per frame (outlier removal): " + str(round(np.mean(outlier_time_list), 4) * 1000) + " ms")
-    print("Average time per frame (color): " + str(round(np.mean(color_filter_time_list), 4) * 1000) + " ms")
-    print("Average time per frame (quat rotation): " + str(round(np.mean(quat_time_list), 4) * 1000) + " ms")
-    print("Average FPS: " + str(round(1000 / time_pf, 4)))
+    print("Average time per frame (time on used frames only): " + str(round(np.mean(time_list)*1000, 1)) + " ms")
+    print("Average time per frame (zed retrieve): " + str(round(np.mean(zed_time_list)*1000, 1)) + " ms")
+    #print("Average time per frame (svo pos change): " + str(round(np.mean(pos_time_list), 1) * 1000) + " ms")
+    print("Average time per frame (inference): " + str(round(np.mean(inferencer_time_list)*1000, 1)) + " ms")
+    print("Average time per frame (transform pc): " + str(round(np.mean(filter_time_list)*1000, 1)) + " ms")
+    print("Average time per frame (depth filter): " + str(round(np.mean(depth_filter_time_list)*1000, 1)) + " ms")
+    print("Average time per frame (subsample): " + str(round(np.mean(sub_filter_time_list)*1000, 1)) + " ms")
+    print("Average time per frame (outlier removal): " + str(round(np.mean(outlier_time_list)*1000, 1)) + " ms")
+    print("Average time per frame (color): " + str(round(np.mean(color_filter_time_list)*1000, 1)) + " ms")
+    #print("Average time per frame (quat rotation): " + str(round(np.mean(quat_time_list), 1) * 1000) + " ms")
+    print("Average FPS: " + str(round(1000 / time_pf, 1)))
     print("Average points per cloud: " + str(round(np.mean(size_list), 0)))
+    print("Times: "+ str(time_pf) + ","+str(round(np.mean(time_list) * 1000, 1))+","
+          +str(round(np.mean(inferencer_time_list) * 1000, 1)) +","
+          + str(round(np.mean(filter_time_list) * 1000, 1)) +","
+          + str(round(np.mean(depth_filter_time_list) * 1000, 1))+","+str(round(np.mean(sub_filter_time_list) * 1000, 1)) +","
+          + str(round(np.mean(outlier_time_list) * 1000, 1)) + ","+ str(round(np.mean(color_filter_time_list) * 1000, 1)))
 
 
 
