@@ -1,7 +1,7 @@
 # Object Detection in 3D using point clouds obtained from ZED Stereocamera
 ## .py files to use
-demo_svo.py runs inference on one svo files directly
-demo_svo_multi2.py runs inference on two svo files where it fuses the two point clouds
+- demo_svo.py runs inference on one svo files directly
+- demo_svo_multi2.py runs inference on two svo files where it fuses the two point clouds
 
 
 ## Installation
