@@ -1,4 +1,3 @@
-# Copyright (c) OpenMMLab. All rights reserved.
 import logging
 import os
 from argparse import ArgumentParser
@@ -13,17 +12,7 @@ from mmdet3d.apis import LidarDet3DInferencer
 import open3d as o3d
 
 '''
-To run this file: 
-mmdetection3d environment with minkowski engine
-download chosen model, set path accordingly in example below
-adjust parameters in this file
-example:
-python demo_svo.py "data/HD1080_SN34783283_15-12-38.svo" /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/projects/TR3D/configs/tr3d_1xb16_scannet-3d-18class.py /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/pdz/tr3d_1xb16_scannet-3d-18class.pth --pred-score-thr=0.09 --wait-time=0.0 --show
-or alternatively
-python demo_svo.py "data/small_object_svo/HD2K_SN38580376_small_obj.svo2" /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/configs/fcaf3d/fcaf3d_2xb8_scannet-3d-18class.py /home/pdz/PythonProjects/mmdetection3d/mmdetection3d/pdz/fcaf3d_8x2_scannet-3d-18class_20220805_084956.pth --pred-score-thr=0.09 --show 
-
-important: if no prediction score is above the threshold, no image will be displayed, wait time to 0 to change frames automatically
-
+same can also be done from demo_svo.py with vis_color= True
 '''
 
 
@@ -53,17 +42,6 @@ hrot_matrix = np.array([[0.8580, -0.1040, 0.5030, -0.5229],
  [-0.0612, 0.9516, 0.3012, -0.6123],
  [0.0000, 0.0000, 0.0000, 1.0000]])
 
-#scaled_hrot_matrix = hrot_matrix
-#scaled_hrot_matrix[3, :3] = scaled_hrot_matrix[3, :3] * scale
-
-
-#not used at the moment
-deg_x = np.deg2rad(0)
-deg_y = np.deg2rad(0)
-deg_z = np.deg2rad(0)
-rot_mat_x = np.array([[1, 0, 0], [0, np.cos(deg_x), -np.sin(deg_x)], [0, np.sin(deg_x), np.cos(deg_x)]])
-rot_mat_y = np.array([[np.cos(deg_y), 0, np.sin(deg_y)], [0, 1, 0], [-np.sin(deg_y), 0, np.cos(deg_y)]])
-rot_mat_z = np.array([[np.cos(deg_z), -np.sin(deg_z), 0], [np.sin(deg_z), np.cos(deg_z), 0], [0, 0, 1]])
 np.random.seed(427)
 
 unit = 1000 # 1000 for mm, 1 for m, via .py gives in mm, gui gives m (use 1000)
