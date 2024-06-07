@@ -2,6 +2,7 @@
 ## .py files to use
 - demo_svo.py runs inference on one svo files directly
 - demo_svo_multi2.py runs inference on two svo files where it fuses the two point clouds
+- demo_live.py runs inference directly on connected camera
 
 
 ## Installation
