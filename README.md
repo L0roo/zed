@@ -1,6 +1,8 @@
 # Object Detection in 3D using point clouds obtained from ZED Stereocamera
-## .py files
-demo_svo.py runs inference on svo files directly
+## .py files to use
+demo_svo.py runs inference on one svo files directly
+demo_svo_multi2.py runs inference on two svo files where it fuses the two point clouds
+
 
 ## Installation
 Installation of packages is a bit complicated and messy. I followed the installation instructions from mmdetection3d and MinkowskiEngine, but had to change quiet some things.
@@ -57,4 +59,8 @@ Then you should be able to run:
 python setup.py install --user
 pip install open3d
 ```
+## Additional infos
+- If the visualisation outputs only a white screen this means that no predicted boudning box is above the threshold. You can lower the threshold by setting the flag --pred-score-thr=0.01
+- Use flag --show for visual output
+- Use flag --wait-time=0.0, if not set it will block on the first frame
 
