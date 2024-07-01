@@ -291,21 +291,28 @@ def main():
                         if scores[i] > bb_thr:
                             filtered_bboxes.append(bboxes[i])
 
-                    def create_aabb(bbox):
-                        min_bound = np.array([bbox[0], bbox[1], bbox[2]])
-                        max_bound = np.array([bbox[3], bbox[4], bbox[5]])
-                        aabb = o3d.geometry.AxisAlignedBoundingBox(min_bound=min_bound, max_bound=max_bound)
-                        aabb.color = (1, 0, 0)  # Red color for the bounding boxes
-                        return aabb
+
 
                     # o3d.visualization.draw_geometries([pcd])
                     vis.add_geometry(pcd)
-
                     # Output the filtered bounding boxes
                     for bbox in filtered_bboxes:
-                        aabb = create_aabb(bbox)
-                        print(aabb)
+
+
+                        center = np.array([bbox[0], bbox[1], bbox[2]])
+                        length = np.array([bbox[3], bbox[4], bbox[5]])
+
+                        min_bound = center - length /2
+                        max_bound = center + length/2
+
+                        aabb = o3d.geometry.AxisAlignedBoundingBox(min_bound=min_bound, max_bound=max_bound)
+                        aabb.color = (1, 0, 0)
                         vis.add_geometry(aabb)
+                        #aabb = o3d.geometry.AxisAlignedBoundingBox(min_bound=max_bound, max_bound=min_bound)
+                        #aabb.color = (1, 0, 0)
+                        #vis.add_geometry(aabb)
+                    #opt = vis.get_render_option()
+                    #opt.line_width = 5.0
 
                     vis.run()
                     vis.destroy_window()
