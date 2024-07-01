@@ -11,6 +11,8 @@ from mmengine.logging import print_log
 
 from mmdet3d.apis import LidarDet3DInferencer
 
+import json
+
 
 '''
 To run this file: 
@@ -33,21 +35,25 @@ TR3D s3dis model doesn't match exacltly: python demo_svo.py "data/small_object_s
 
 
 
-downsampling = 1 # each x frame is used (takes some time to skip frames)
-max_frames = 50 # amount of frames till end
+downsampling = 5 # each x frame is used (takes some time to skip frames)
+max_frames = 1# amount of frames till end
 
 max_depth = 100.6 # in m (runs only on z coordinate) set above 50 to disable
 max_dist = 1.5 # in m, set above 50 to disable
-scale = 5.0 # scale up a bit gives higher pred scores since original net was trained on larger scenes
-ppc = 50000 #points per cloud
-filter_scale = 5.4 #need to initialy sample more points to compensate for points filtered out (small2: 5.4 for dist 1.5,no outlier)
+scale = 7.0 # scale up a bit gives higher pred scores since original net was trained on larger scenes
+ppc = 60000 #points per cloud
+filter_scale = 1.0 #need to initialy sample more points to compensate for points filtered out (small2: 5.4 for dist 1.5,no outlier)
 read_color = True # read color or choose random colors
 rotate = True # rotate and translate according to homogenous transform matrix hrot_matrix
-outlier_removal = False # have open3d remove statistical outliers
+outlier_removal = True # have open3d remove statistical outliers
 depth_filter = True # have depth filter active
-vis_col = True # if true doesn't run infernece but shows with color
 out_nb = 20 # parameters for outlier removal
 out_std = 1.0
+
+vis_col = True # if true doesn't run infernece but shows with color
+json_in = 'data/json/small2_tr3d_7.json'
+json_in_2 = 'outputs/preds/00000000.json'
+bb_thr = 0.07
 
 
 hrot_matrix_1=np.array([[-0.2472, 0.7015, -0.6684, 0.8397],
@@ -156,13 +162,6 @@ def filter_points(point_cloud):
     points = points.reshape((-1, 4))
 
 
-    # subsample
-    st_sub = time.time()
-    perc = ppc*filter_scale / len(points)
-    if perc > 1: perc = 1
-    mask = np.random.choice([True, False], size=len(points), p=[perc, 1-perc])
-    points = points[mask]
-    et_sub = time.time()
 
 
     # depth/dist filter
@@ -176,6 +175,15 @@ def filter_points(point_cloud):
             points = points[mask3]
     et_depth = time.time()
 
+    # subsample
+    st_sub = time.time()
+    perc = ppc*filter_scale / len(points)
+    if perc > 1: perc = 1
+    mask = np.random.choice([True, False], size=len(points), p=[perc, 1-perc])
+    points = points[mask]
+    et_sub = time.time()
+
+
     # oulier removal
     st_out = time.time()
     if outlier_removal:
@@ -184,6 +192,9 @@ def filter_points(point_cloud):
         cl, ind = pcd.remove_statistical_outlier(nb_neighbors=out_nb,std_ratio=out_std)
         points = points[ind]
     et_out = time.time()
+
+
+
 
     # rotate with matrix
     st_quat = time.time()
@@ -257,12 +268,51 @@ def main():
 
                 st_inferencer = time.time()
                 inferencer.num_visualized_imgs = i  # can not generate output files else
+
                 if vis_col:
+                    vis = o3d.visualization.Visualizer()
+                    vis.create_window()
+
                     pcd = o3d.geometry.PointCloud()
                     points = filter_points(point_cloud)
                     pcd.points = o3d.utility.Vector3dVector(points[:, :3])
                     pcd.colors = o3d.utility.Vector3dVector(points[:, 3:] / 256)
-                    o3d.visualization.draw_geometries([pcd])
+
+                    f = open(json_in)
+                    data = json.load(f)
+
+                    scores = data['scores_3d']
+                    bboxes = data['bboxes_3d']
+
+                    # Filter bounding boxes based on the score threshold
+                    #filtered_bboxes = [bbox for score, bbox in zip(scores, bboxes) if score > bb_thr]
+                    filtered_bboxes = []
+                    for i in range(len(scores)):
+                        if scores[i] > bb_thr:
+                            filtered_bboxes.append(bboxes[i])
+
+                    def create_aabb(bbox):
+                        min_bound = np.array([bbox[0], bbox[1], bbox[2]])
+                        max_bound = np.array([bbox[3], bbox[4], bbox[5]])
+                        aabb = o3d.geometry.AxisAlignedBoundingBox(min_bound=min_bound, max_bound=max_bound)
+                        aabb.color = (1, 0, 0)  # Red color for the bounding boxes
+                        return aabb
+
+                    # o3d.visualization.draw_geometries([pcd])
+                    vis.add_geometry(pcd)
+
+                    # Output the filtered bounding boxes
+                    for bbox in filtered_bboxes:
+                        aabb = create_aabb(bbox)
+                        print(aabb)
+                        vis.add_geometry(aabb)
+
+                    vis.run()
+                    vis.destroy_window()
+
+
+
+
                 else:
                     inferencer(**call_args)
                 et_inferencer = time.time()

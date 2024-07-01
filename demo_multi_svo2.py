@@ -32,15 +32,15 @@ important: if no prediction score is above the threshold, no image will be displ
 input_path_1 = "data/small_object_svo/HD2K_small1.svo2" # specify path to the two svo files
 input_path_2 = "data/small_object_svo/HD2K_small2.svo2"
 sec_shift_vec_0 = np.array([0,0,0])
-sec_shift_vec = np.array([-1.3,1.07,0.09]) # add shift if no alignment after homogenous transformation or use 0 vetor if okay
+sec_shift_vec = np.array([-1.345,1.07,0.092]) # add shift if no alignment after homogenous transformation or use 0 vetor if okay
 
 
 downsampling = 5 # each x frame is used
-max_frames = 1
+max_frames = 5
 
 max_depth = 100.6 # in m (runs only on z coordinate) set above 50 to disable
 max_dist = 1.5
-scale = 9.0 # scale up a bit gives higher pred scores
+scale = 6.0 # scale up a bit gives higher pred scores
 ppc = 60000 #points per cloud, makes perc obsolete
 filter_scale = 1.3 #need to initialy sample more points to compensate for points filtered out
 read_color = True
